@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vue 源码解读</title>
+</head>
+<body>
+  <div id="app">
+    {{ msg }}
+  </div>
+  <script src="../dist/vue.js"></script>
+  <script>
+    // debugger
+    // 断点寻找Vue入口
+    new Vue({
+      el: '#app',
+      data: {
+        msg: 'hello vue'
+      }
+    })
+  </script>
+</body>
+</html>
