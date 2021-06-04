@@ -41,6 +41,7 @@ export function initMixin (Vue: Class<Component>) {
        * 将组件配置对象上的一些深层次属性放到 vm.$options 选项中，以提高代码的执行效率
        */
       // 初始化内部组件
+      // 定义组件内部组件父子关系
       initInternalComponent(vm, options)
     } else {
       /**
@@ -126,20 +127,21 @@ export function initInternalComponent (vm: Component, options: InternalComponent
  */
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
-  // super 哪里来的？
   if (Ctor.super) {
+    console.log(Ctor.super); // super 哪里来的？
+    // 存在基类，递归解析基类构造函数的选项
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
     if (superOptions !== cachedSuperOptions) {
-      // super option changed,
-      // need to resolve new options.
+      // 说明基类构造函数选项已经发生改变，需要重新设置
       Ctor.superOptions = superOptions
-      // check if there are any late-modified/attached options (#4976)
+      // 检查 Ctor.options 上是否有任何后期修改/附加的选项（＃4976）
       const modifiedOptions = resolveModifiedOptions(Ctor)
-      // update base extend options
+      // 如果存在被修改或增加的选项，则合并两个选项
       if (modifiedOptions) {
         extend(Ctor.extendOptions, modifiedOptions)
       }
+      // 选项合并，将合并结果赋值为 Ctor.options
       options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions)
       if (options.name) {
         options.components[options.name] = Ctor
@@ -149,10 +151,17 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
   return options
 }
 
-function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
+
+/**
+ * 解析构造函数选项中后续被修改或者增加的选项
+ */
+ function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
   let modified
+  // 构造函数选项
   const latest = Ctor.options
+  // 密封的构造函数选项，备份
   const sealed = Ctor.sealedOptions
+  // 对比两个选项，记录不一致的选项
   for (const key in latest) {
     if (latest[key] !== sealed[key]) {
       if (!modified) modified = {}
@@ -161,3 +170,4 @@ function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
   }
   return modified
 }
+
