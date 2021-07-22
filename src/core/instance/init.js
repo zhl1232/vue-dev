@@ -18,10 +18,12 @@ let uid = 0
  */
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
+    console.log(options);
     // vue 实例
     const vm: Component = this
     // a uid
     // 每个 vue 实例都有一个 _uid，并且是依次递增的
+    // debugger
     vm._uid = uid++
 
     let startTag, endTag
@@ -50,7 +52,7 @@ export function initMixin (Vue: Class<Component>) {
        *   1、Vue.component 方法注册的全局组件在注册时做了选项合并
        *   2、{ components: { xx } } 方式注册的局部组件在执行编译器生成的 render 函数时做了选项合并，包括根组件中的 components 配置
        */
-      console.log(vm.constructor);
+      console.dir(vm.constructor);
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -126,14 +128,15 @@ export function initInternalComponent (vm: Component, options: InternalComponent
  * @returns 
  */
 export function resolveConstructorOptions (Ctor: Class<Component>) {
+  // debugger
   let options = Ctor.options
   if (Ctor.super) {
-    console.log(Ctor.super); // super 哪里来的？
+    console.dir(Ctor.super); // super 哪里来的？
     // 存在基类，递归解析基类构造函数的选项
     const superOptions = resolveConstructorOptions(Ctor.super)
     const cachedSuperOptions = Ctor.superOptions
     if (superOptions !== cachedSuperOptions) {
-      // 说明基类构造函数选项已经发生改变，需要重新设置
+      // 说明基类构造函数选项已经发生改变，需要重新设置 
       Ctor.superOptions = superOptions
       // 检查 Ctor.options 上是否有任何后期修改/附加的选项（＃4976）
       const modifiedOptions = resolveModifiedOptions(Ctor)

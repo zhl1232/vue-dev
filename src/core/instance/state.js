@@ -36,6 +36,13 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
+
+  /**
+   * 添加 get 和 set 方法
+   * this vm对象
+   * sourceKey  _data 或者 _props
+   * 把 options 里的 data 和 props 代理到 vm 上，在 vm 可以直接 .${key} 获取  
+   */
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -46,27 +53,66 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
-export function initState (vm: Component) {
+/**
+ * 两件事：
+ *   数据响应式的入口：分别处理 props、methods、data、computed、watch
+ *   优先级：props、methods、data、computed 对象中的属性不能出现重复，优先级和列出顺序一致
+ *         其中 computed 中的 key 不能和 props、data 中的 key 重复，methods 不影响
+ */
+ export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  debugger
+  // 处理 props 对象，为 props 对象的每个属性设置响应式，并将其代理到 vm 实例上
   if (opts.props) initProps(vm, opts.props)
+  // 处理 methos 对象，校验每个属性的值是否为函数、和 props 属性比对进行判重处理，最后得到 vm[key] = methods[key]
   if (opts.methods) initMethods(vm, opts.methods)
+  /**
+   * 做了三件事
+   *   1、判重处理，data 对象上的属性不能和 props、methods 对象上的属性相同
+   *   2、代理 data 对象上的属性到 vm 实例
+   *   3、为 data 对象的上数据设置响应式 
+   */
+  console.log(opts.data);
   if (opts.data) {
+    // 添加 _.data
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  /**
+   * 三件事：
+   *   1、为 computed[key] 创建 watcher 实例，默认是懒执行
+   *   2、代理 computed[key] 到 vm 实例
+   *   3、判重，computed 中的 key 不能和 data、props 中的属性重复
+   */
   if (opts.computed) initComputed(vm, opts.computed)
+  /**
+   * 三件事：
+   *   1、处理 watch 对象
+   *   2、为每个 watch.key 创建 watcher 实例，key 和 watcher 实例可能是 一对多 的关系
+   *   3、如果设置了 immediate，则立即执行 回调函数
+   */
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
+    
+  /**
+   * 其实到这里也能看出，computed 和 watch 在本质是没有区别的，都是通过 watcher 去实现的响应式
+   * 非要说有区别，那也只是在使用方式上的区别，简单来说：
+   *   1、watch：适用于当数据变化时执行异步或者开销较大的操作时使用，即需要长时间等待的操作可以放在 watch 中
+   *   2、computed：其中可以使用异步方法，但是没有任何意义。所以 computed 更适合做一些同步计算
+   */
 }
 
+// 处理 props 对象，为 props 对象的每个属性设置响应式，并将其代理到 vm 实例上
 function initProps (vm: Component, propsOptions: Object) {
+  console.log(propsOptions);
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array
   // instead of dynamic object key enumeration.
+  // 缓存 props 的每个 key，性能优化
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
@@ -74,7 +120,9 @@ function initProps (vm: Component, propsOptions: Object) {
     toggleObserving(false)
   }
   for (const key in propsOptions) {
+    // 缓存 key
     keys.push(key)
+    // 获取 props[key] 的默认值
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
@@ -98,12 +146,14 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
+      // 为 props 的每个 key 是设置数据响应式
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
+      // 代理 key 到 vm 对象上
       proxy(vm, `_props`, key)
     }
   }
@@ -111,7 +161,9 @@ function initProps (vm: Component, propsOptions: Object) {
 }
 
 function initData (vm: Component) {
+  // 得到 data 对象
   let data = vm.$options.data
+  debugger
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
@@ -123,7 +175,11 @@ function initData (vm: Component) {
       vm
     )
   }
-  // proxy data on instance
+  /**
+   * 两件事
+   *   1、判重处理，data 对象上的属性不能和 props、methods 对象上的属性相同
+   *   2、代理 data 对象上的属性到 vm 实例
+   */
   const keys = Object.keys(data)
   const props = vm.$options.props
   const methods = vm.$options.methods
@@ -144,15 +200,17 @@ function initData (vm: Component) {
         `Use prop default value instead.`,
         vm
       )
+      // 不是保留值
     } else if (!isReserved(key)) {
       proxy(vm, `_data`, key)
     }
   }
-  // observe data
+  // 为 data 对象上的数据设置响应式
   observe(data, true /* asRootData */)
 }
 
 export function getData (data: Function, vm: Component): any {
+  // debugger
   // #7573 disable dep collection when invoking data getters
   pushTarget()
   try {

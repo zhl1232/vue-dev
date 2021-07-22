@@ -101,6 +101,7 @@ export function mergeDataOrFn (
       )
     }
   } else {
+    console.log(parentVal, childVal);
     return function mergedInstanceDataFn () {
       // instance merge
       const instanceData = typeof childVal === 'function'

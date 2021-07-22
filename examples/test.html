@@ -1,23 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Vue 源码解读</title>
-</head>
-<body>
-  <div id="app">
-    {{ msg }}
-  </div>
-  <script src="../dist/vue.js"></script>
-  <script>
-    // debugger
-    // 断点寻找Vue入口
-    new Vue({
-      el: '#app',
-      data: {
-        msg: 'hello vue'
-      }
-    })
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vue 源码解读</title>
+  </head>
+  <body>
+    <div id="app">
+      {{ msg }}
+      <todo-item
+        v-for="item in groceryList"
+        v-bind:todo="item"
+        v-bind:key="item.id"
+      ></todo-item>
+    </div>
+    <script src="../dist/vue.js"></script>
+    <script>
+      // debugger
+      // 断点寻找Vue入口
+      Vue.component("todo-item", {
+        // todo-item 组件现在接受一个
+        // "prop"，类似于一个自定义 attribute。
+        // 这个 prop 名为 todo。
+        props: ["todo"],
+        template: "<li>{{ todo.text }}</li>",
+      });
+      new Vue({
+        el: "#app",
+        data: {
+          msg: "hello vue",
+          groceryList: [
+            { id: 0, text: "蔬菜" },
+            { id: 1, text: "奶酪" },
+            { id: 2, text: "随便其它什么人吃的东西" },
+          ],
+        },
+      });
+      console.dir(Vue);
+    </script>
+  </body>
 </html>
